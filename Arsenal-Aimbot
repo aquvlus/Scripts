@@ -1,0 +1,64 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+
+local function GetClosestTarget()
+    local closestTarget = nil
+    local shortestDistance = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local targetRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            local distance = (RootPart.Position - targetRootPart.Position).Magnitude
+
+            if distance < shortestDistance then
+                closestTarget = player
+                shortestDistance = distance
+            end
+        end
+    end
+
+    return closestTarget
+end
+
+local function AimAtTarget(target)
+    local targetRootPart = target.Character:FindFirstChild("HumanoidRootPart")
+    local direction = (targetRootPart.Position - RootPart.Position).Unit
+    local angle = math.atan2(direction.Z, direction.X)
+
+    Mouse.HitPosition = targetRootPart.Position
+    Mouse.Target = targetRootPart
+    Mouse.Hit = targetRootPart
+    Mouse.KeyUp:Wait()
+
+    Humanoid.WalkSpeed = 0
+    Humanoid.JumpPower = 0
+
+    workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+    workspace.CurrentCamera.CFrame = CFrame.new(RootPart.Position, targetRootPart.Position) * CFrame.Angles(0, 0, angle)
+end
+
+local function OnChatted(message)
+    if message:lower() == "aimbot on" then
+        print("Aimbot enabled")
+        spawn(function()
+            while true do
+                local target = GetClosestTarget()
+                if target then
+                    AimAtTarget(target)
+                end
+                task.wait(0.1)
+            end
+        end)
+    elseif message:lower() == "aimbot off" then
+        print("Aimbot disabled")
+        Humanoid.WalkSpeed = 16
+        Humanoid.JumpPower = 50
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+    end
+end
+
+LocalPlayer.Chatted:Connect(OnChatted)
